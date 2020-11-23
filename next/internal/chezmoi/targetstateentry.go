@@ -147,7 +147,7 @@ func (t *TargetStateFile) Apply(s System, actualStateEntry ActualStateEntry, uma
 		// Compare file contents using only their SHA256 sums. This is so that
 		// we can compare last-written states without storing the full contents
 		// of each file written.
-		destContentsSHA256, err := actualStateFile.ContentsSHA256()
+		actualContentsSHA256, err := actualStateFile.ContentsSHA256()
 		if err != nil {
 			return err
 		}
@@ -155,7 +155,7 @@ func (t *TargetStateFile) Apply(s System, actualStateEntry ActualStateEntry, uma
 		if err != nil {
 			return err
 		}
-		if bytes.Equal(destContentsSHA256, contentsSHA256) {
+		if bytes.Equal(actualContentsSHA256, contentsSHA256) {
 			if actualStateFile.perm&^umask == t.perm&^umask {
 				return nil
 			}
@@ -192,7 +192,7 @@ func (t *TargetStateFile) Equal(actualStateEntry ActualStateEntry, umask os.File
 	if actualStateFile.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
-	destContentsSHA256, err := actualStateFile.ContentsSHA256()
+	actualContentsSHA256, err := actualStateFile.ContentsSHA256()
 	if err != nil {
 		return false, err
 	}
@@ -200,7 +200,7 @@ func (t *TargetStateFile) Equal(actualStateEntry ActualStateEntry, umask os.File
 	if err != nil {
 		return false, err
 	}
-	if !bytes.Equal(destContentsSHA256, contentsSHA256) {
+	if !bytes.Equal(actualContentsSHA256, contentsSHA256) {
 		return false, nil
 	}
 	return true, nil
@@ -340,7 +340,7 @@ func (t *TargetStateScript) Evaluate() error {
 // Apply updates actualStateEntry to match t.
 func (t *TargetStateSymlink) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
 	if actualStateSymlink, ok := actualStateEntry.(*ActualStateSymlink); ok {
-		destLinkname, err := actualStateSymlink.Linkname()
+		actualLinkname, err := actualStateSymlink.Linkname()
 		if err != nil {
 			return err
 		}
@@ -348,7 +348,7 @@ func (t *TargetStateSymlink) Apply(s System, actualStateEntry ActualStateEntry, 
 		if err != nil {
 			return err
 		}
-		if destLinkname == linkname {
+		if actualLinkname == linkname {
 			return nil
 		}
 	}
