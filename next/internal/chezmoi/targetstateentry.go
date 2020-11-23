@@ -20,8 +20,8 @@ type EntryState struct {
 
 // A TargetStateEntry represents the state of an entry in the target state.
 type TargetStateEntry interface {
-	Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error
-	Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error)
+	Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error
+	Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error)
 	EntryState() (*EntryState, error)
 	Evaluate() error
 }
@@ -76,17 +76,17 @@ func (es *EntryState) Equal(other *EntryState) bool {
 	return es.Mode == other.Mode && bytes.Equal(es.ContentsSHA256, other.ContentsSHA256)
 }
 
-// Apply updates destStateEntry to match t.
-func (t *TargetStateAbsent) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	if _, ok := destStateEntry.(*DestStateAbsent); ok {
+// Apply updates actualStateEntry to match t.
+func (t *TargetStateAbsent) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	if _, ok := actualStateEntry.(*ActualStateAbsent); ok {
 		return nil
 	}
-	return s.RemoveAll(destStateEntry.Path())
+	return s.RemoveAll(actualStateEntry.Path())
 }
 
-// Equal returns true if destStateEntry matches t.
-func (t *TargetStateAbsent) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
-	_, ok := destStateEntry.(*DestStateAbsent)
+// Equal returns true if actualStateEntry matches t.
+func (t *TargetStateAbsent) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
+	_, ok := actualStateEntry.(*ActualStateAbsent)
 	if !ok {
 		return false, nil
 	}
@@ -103,27 +103,27 @@ func (t *TargetStateAbsent) Evaluate() error {
 	return nil
 }
 
-// Apply updates destStateEntry to match t. It does not recurse.
-func (t *TargetStateDir) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	if destStateDir, ok := destStateEntry.(*DestStateDir); ok {
-		if destStateDir.perm&^umask == t.perm&^umask {
+// Apply updates actualStateEntry to match t. It does not recurse.
+func (t *TargetStateDir) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	if actualStateDir, ok := actualStateEntry.(*ActualStateDir); ok {
+		if actualStateDir.perm&^umask == t.perm&^umask {
 			return nil
 		}
-		return s.Chmod(destStateDir.Path(), t.perm)
+		return s.Chmod(actualStateDir.Path(), t.perm)
 	}
-	if err := destStateEntry.Remove(s); err != nil {
+	if err := actualStateEntry.Remove(s); err != nil {
 		return err
 	}
-	return s.Mkdir(destStateEntry.Path(), t.perm)
+	return s.Mkdir(actualStateEntry.Path(), t.perm)
 }
 
-// Equal returns true if destStateEntry matches t. It does not recurse.
-func (t *TargetStateDir) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
-	destStateDir, ok := destStateEntry.(*DestStateDir)
+// Equal returns true if actualStateEntry matches t. It does not recurse.
+func (t *TargetStateDir) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
+	actualStateDir, ok := actualStateEntry.(*ActualStateDir)
 	if !ok {
 		return false, nil
 	}
-	if destStateDir.perm&^umask != t.perm&^umask {
+	if actualStateDir.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
 	return true, nil
@@ -141,13 +141,13 @@ func (t *TargetStateDir) Evaluate() error {
 	return nil
 }
 
-// Apply updates destStateEntry to match t.
-func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	if destStateFile, ok := destStateEntry.(*DestStateFile); ok {
+// Apply updates actualStateEntry to match t.
+func (t *TargetStateFile) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	if actualStateFile, ok := actualStateEntry.(*ActualStateFile); ok {
 		// Compare file contents using only their SHA256 sums. This is so that
 		// we can compare last-written states without storing the full contents
 		// of each file written.
-		destContentsSHA256, err := destStateFile.ContentsSHA256()
+		destContentsSHA256, err := actualStateFile.ContentsSHA256()
 		if err != nil {
 			return err
 		}
@@ -156,19 +156,19 @@ func (t *TargetStateFile) Apply(s System, destStateEntry DestStateEntry, umask o
 			return err
 		}
 		if bytes.Equal(destContentsSHA256, contentsSHA256) {
-			if destStateFile.perm&^umask == t.perm&^umask {
+			if actualStateFile.perm&^umask == t.perm&^umask {
 				return nil
 			}
-			return s.Chmod(destStateFile.Path(), t.perm)
+			return s.Chmod(actualStateFile.Path(), t.perm)
 		}
-	} else if err := destStateEntry.Remove(s); err != nil {
+	} else if err := actualStateEntry.Remove(s); err != nil {
 		return err
 	}
 	contents, err := t.Contents()
 	if err != nil {
 		return err
 	}
-	return s.WriteFile(destStateEntry.Path(), contents, t.perm)
+	return s.WriteFile(actualStateEntry.Path(), contents, t.perm)
 }
 
 // EntryState returns t's entry state.
@@ -183,16 +183,16 @@ func (t *TargetStateFile) EntryState() (*EntryState, error) {
 	}, nil
 }
 
-// Equal returns true if destStateEntry matches t.
-func (t *TargetStateFile) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
-	destStateFile, ok := destStateEntry.(*DestStateFile)
+// Equal returns true if actualStateEntry matches t.
+func (t *TargetStateFile) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
+	actualStateFile, ok := actualStateEntry.(*ActualStateFile)
 	if !ok {
 		return false, nil
 	}
-	if destStateFile.perm&^umask != t.perm&^umask {
+	if actualStateFile.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
-	destContentsSHA256, err := destStateFile.ContentsSHA256()
+	destContentsSHA256, err := actualStateFile.ContentsSHA256()
 	if err != nil {
 		return false, err
 	}
@@ -212,21 +212,21 @@ func (t *TargetStateFile) Evaluate() error {
 	return err
 }
 
-// Apply updates destStateEntry to match t.
-func (t *TargetStatePresent) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	if destStateFile, ok := destStateEntry.(*DestStateFile); ok {
-		if destStateFile.perm&^umask == t.perm&^umask {
+// Apply updates actualStateEntry to match t.
+func (t *TargetStatePresent) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	if actualStateFile, ok := actualStateEntry.(*ActualStateFile); ok {
+		if actualStateFile.perm&^umask == t.perm&^umask {
 			return nil
 		}
-		return s.Chmod(destStateFile.Path(), t.perm)
-	} else if err := destStateEntry.Remove(s); err != nil {
+		return s.Chmod(actualStateFile.Path(), t.perm)
+	} else if err := actualStateEntry.Remove(s); err != nil {
 		return err
 	}
 	contents, err := t.Contents()
 	if err != nil {
 		return err
 	}
-	return s.WriteFile(destStateEntry.Path(), contents, t.perm)
+	return s.WriteFile(actualStateEntry.Path(), contents, t.perm)
 }
 
 // EntryState returns t's entry state.
@@ -234,13 +234,13 @@ func (t *TargetStatePresent) EntryState() (*EntryState, error) {
 	return nil, nil
 }
 
-// Equal returns true if destStateEntry matches t.
-func (t *TargetStatePresent) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
-	destStateFile, ok := destStateEntry.(*DestStateFile)
+// Equal returns true if actualStateEntry matches t.
+func (t *TargetStatePresent) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
+	actualStateFile, ok := actualStateEntry.(*ActualStateFile)
 	if !ok {
 		return false, nil
 	}
-	if destStateFile.perm&^umask != t.perm&^umask {
+	if actualStateFile.perm&^umask != t.perm&^umask {
 		return false, nil
 	}
 	return true, nil
@@ -252,14 +252,14 @@ func (t *TargetStatePresent) Evaluate() error {
 	return err
 }
 
-// Apply renames destStateEntry.
-func (t *TargetStateRenameDir) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	dir := path.Dir(destStateEntry.Path())
+// Apply renames actualStateEntry.
+func (t *TargetStateRenameDir) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	dir := path.Dir(actualStateEntry.Path())
 	return s.Rename(path.Join(dir, t.oldName), path.Join(dir, t.newName))
 }
 
-// Equal returns false because destStateEntry has not been renamed.
-func (t *TargetStateRenameDir) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
+// Equal returns false because actualStateEntry has not been renamed.
+func (t *TargetStateRenameDir) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
 	return false, nil
 }
 
@@ -274,7 +274,7 @@ func (t *TargetStateRenameDir) Evaluate() error {
 }
 
 // Apply runs t.
-func (t *TargetStateScript) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
+func (t *TargetStateScript) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
 	var (
 		key        []byte
 		executedAt time.Time
@@ -301,7 +301,7 @@ func (t *TargetStateScript) Apply(s System, destStateEntry DestStateEntry, umask
 	if isEmpty(contents) {
 		return nil
 	}
-	if err := s.RunScript(t.name, path.Dir(destStateEntry.Path()), contents); err != nil {
+	if err := s.RunScript(t.name, path.Dir(actualStateEntry.Path()), contents); err != nil {
 		return err
 	}
 	if t.once {
@@ -324,8 +324,8 @@ func (t *TargetStateScript) EntryState() (*EntryState, error) {
 	return nil, nil // FIXME
 }
 
-// Equal returns true if destStateEntry matches t.
-func (t *TargetStateScript) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
+// Equal returns true if actualStateEntry matches t.
+func (t *TargetStateScript) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
 	// Scripts are independent of the destination state.
 	// FIXME maybe the destination state should store the sha256 sums of executed scripts
 	return true, nil
@@ -337,10 +337,10 @@ func (t *TargetStateScript) Evaluate() error {
 	return err
 }
 
-// Apply updates destStateEntry to match t.
-func (t *TargetStateSymlink) Apply(s System, destStateEntry DestStateEntry, umask os.FileMode) error {
-	if destStateSymlink, ok := destStateEntry.(*DestStateSymlink); ok {
-		destLinkname, err := destStateSymlink.Linkname()
+// Apply updates actualStateEntry to match t.
+func (t *TargetStateSymlink) Apply(s System, actualStateEntry ActualStateEntry, umask os.FileMode) error {
+	if actualStateSymlink, ok := actualStateEntry.(*ActualStateSymlink); ok {
+		destLinkname, err := actualStateSymlink.Linkname()
 		if err != nil {
 			return err
 		}
@@ -356,10 +356,10 @@ func (t *TargetStateSymlink) Apply(s System, destStateEntry DestStateEntry, umas
 	if err != nil {
 		return err
 	}
-	if err := destStateEntry.Remove(s); err != nil {
+	if err := actualStateEntry.Remove(s); err != nil {
 		return err
 	}
-	return s.WriteSymlink(linkname, destStateEntry.Path())
+	return s.WriteSymlink(linkname, actualStateEntry.Path())
 }
 
 // EntryState returns t's entry state.
@@ -374,13 +374,13 @@ func (t *TargetStateSymlink) EntryState() (*EntryState, error) {
 	}, nil
 }
 
-// Equal returns true if destStateEntry matches t.
-func (t *TargetStateSymlink) Equal(destStateEntry DestStateEntry, umask os.FileMode) (bool, error) {
-	destStateSymlink, ok := destStateEntry.(*DestStateSymlink)
+// Equal returns true if actualStateEntry matches t.
+func (t *TargetStateSymlink) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
+	actualStateSymlink, ok := actualStateEntry.(*ActualStateSymlink)
 	if !ok {
 		return false, nil
 	}
-	destLinkname, err := destStateSymlink.Linkname()
+	actualLinkname, err := actualStateSymlink.Linkname()
 	if err != nil {
 		return false, err
 	}
@@ -388,7 +388,7 @@ func (t *TargetStateSymlink) Equal(destStateEntry DestStateEntry, umask os.FileM
 	if err != nil {
 		return false, nil
 	}
-	if destLinkname != linkname {
+	if actualLinkname != linkname {
 		return false, nil
 	}
 	return true, nil

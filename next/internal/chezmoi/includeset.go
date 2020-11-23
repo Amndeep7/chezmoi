@@ -54,14 +54,14 @@ func NewIncludeSet(bits IncludeBits) *IncludeSet {
 	}
 }
 
-// IncludeDestStateEntry returns true if destStateEntry should be included.
-func (s *IncludeSet) IncludeDestStateEntry(destStateEntry DestStateEntry) bool {
-	switch destStateEntry.(type) {
-	case *DestStateDir:
+// IncludeActualStateEntry returns true if actualStateEntry should be included.
+func (s *IncludeSet) IncludeActualStateEntry(actualStateEntry ActualStateEntry) bool {
+	switch actualStateEntry.(type) {
+	case *ActualStateDir:
 		return s.bits&IncludeDirs != 0
-	case *DestStateFile:
+	case *ActualStateFile:
 		return s.bits&IncludeFiles != 0
-	case *DestStateSymlink:
+	case *ActualStateSymlink:
 		return s.bits&IncludeSymlinks != 0
 	default:
 		return false

@@ -165,11 +165,11 @@ func (s *SourceState) Add(sourceSystem System, destPathInfos map[string]os.FileI
 			return fmt.Errorf("%s: parent directory not in source state", destPath)
 		}
 
-		destStateEntry, err := NewDestStateEntry(sourceSystem, destPath)
+		actualStateEntry, err := NewActualStateEntry(sourceSystem, destPath)
 		if err != nil {
 			return err
 		}
-		newSourceStateEntry, err := s.sourceStateEntry(destStateEntry, destPath, destPathInfo, parentDir, options)
+		newSourceStateEntry, err := s.sourceStateEntry(actualStateEntry, destPath, destPathInfo, parentDir, options)
 		if err != nil {
 			return err
 		}
@@ -294,12 +294,12 @@ func (s *SourceState) ApplyOne(targetSystem System, targetDir, targetName string
 	}
 
 	targetPath := path.Join(targetDir, targetName)
-	destStateEntry, err := NewDestStateEntry(targetSystem, targetPath)
+	actualStateEntry, err := NewActualStateEntry(targetSystem, targetPath)
 	if err != nil {
 		return err
 	}
 
-	if err := targetStateEntry.Apply(targetSystem, destStateEntry, options.Umask); err != nil {
+	if err := targetStateEntry.Apply(targetSystem, actualStateEntry, options.Umask); err != nil {
 		return err
 	}
 
@@ -836,13 +836,13 @@ func (s *SourceState) newSourceStateFile(sourcePath string, fa FileAttributes, t
 	}
 }
 
-// sourceStateEntry returns a new SourceStateEntry based on destStateEntry.
-func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath string, info os.FileInfo, parentDir string, options *AddOptions) (SourceStateEntry, error) {
+// sourceStateEntry returns a new SourceStateEntry based on actualStateEntry.
+func (s *SourceState) sourceStateEntry(actualStateEntry ActualStateEntry, destPath string, info os.FileInfo, parentDir string, options *AddOptions) (SourceStateEntry, error) {
 	// FIXME IAMHERE need to generate EntryState and update status if needed
-	switch destStateEntry := destStateEntry.(type) {
-	case *DestStateAbsent:
+	switch actualStateEntry := actualStateEntry.(type) {
+	case *ActualStateAbsent:
 		return nil, fmt.Errorf("%s: not found", destPath)
-	case *DestStateDir:
+	case *ActualStateDir:
 		attributes := DirAttributes{
 			Name:    info.Name(),
 			Exact:   options.Exact,
@@ -855,7 +855,7 @@ func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath s
 				perm: 0o777,
 			},
 		}, nil
-	case *DestStateFile:
+	case *ActualStateFile:
 		attributes := FileAttributes{
 			Name:       info.Name(),
 			Type:       SourceFileTypeFile,
@@ -865,7 +865,7 @@ func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath s
 			Private:    runtime.GOOS != "windows" && info.Mode().Perm()&0o77 == 0,
 			Template:   options.Template || options.AutoTemplate,
 		}
-		contents, err := destStateEntry.Contents()
+		contents, err := actualStateEntry.Contents()
 		if err != nil {
 			return nil, err
 		}
@@ -887,13 +887,13 @@ func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath s
 				perm:         0o666,
 			},
 		}, nil
-	case *DestStateSymlink:
+	case *ActualStateSymlink:
 		attributes := FileAttributes{
 			Name:     info.Name(),
 			Type:     SourceFileTypeSymlink,
 			Template: options.Template || options.AutoTemplate,
 		}
-		linkname, err := destStateEntry.Linkname()
+		linkname, err := actualStateEntry.Linkname()
 		if err != nil {
 			return nil, err
 		}
@@ -915,7 +915,7 @@ func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath s
 			},
 		}, nil
 	default:
-		panic(fmt.Sprintf("%T: unsupported type", destStateEntry))
+		panic(fmt.Sprintf("%T: unsupported type", actualStateEntry))
 	}
 }
 

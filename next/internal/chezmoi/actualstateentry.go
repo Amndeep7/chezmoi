@@ -4,44 +4,44 @@ import (
 	"os"
 )
 
-// An DestStateEntry represents the state of an entry in the destination state.
-type DestStateEntry interface {
+// An ActualStateEntry represents the actual state of an entry in the
+// filesystem.
+type ActualStateEntry interface {
 	Path() string
 	Remove(s System) error
 }
 
-// A DestStateAbsent represents the absence of an entry in the destination
-// state.
-type DestStateAbsent struct {
+// A ActualStateAbsent represents the absence of an entry in the filesystem.
+type ActualStateAbsent struct {
 	path string
 }
 
-// A DestStateDir represents the state of a directory in the destination state.
-type DestStateDir struct {
+// A ActualStateDir represents the state of a directory in the filesystem.
+type ActualStateDir struct {
 	path string
 	perm os.FileMode
 }
 
-// A DestStateFile represents the state of a file in the destination state.
-type DestStateFile struct {
+// A ActualStateFile represents the state of a file in the filesystem.
+type ActualStateFile struct {
 	path string
 	perm os.FileMode
 	*lazyContents
 }
 
-// A DestStateSymlink represents the state of a symlink in the destination
-// state.
-type DestStateSymlink struct {
+// A ActualStateSymlink represents the state of a symlink in the filesystem.
+type ActualStateSymlink struct {
 	path string
 	*lazyLinkname
 }
 
-// NewDestStateEntry returns a new DestStateEntry populated with path from fs.
-func NewDestStateEntry(s System, path string) (DestStateEntry, error) {
+// NewActualStateEntry returns a new ActualStateEntry populated with path from
+// fs.
+func NewActualStateEntry(s System, path string) (ActualStateEntry, error) {
 	info, err := s.Lstat(path)
 	switch {
 	case os.IsNotExist(err):
-		return &DestStateAbsent{
+		return &ActualStateAbsent{
 			path: path,
 		}, nil
 	case err != nil:
@@ -50,7 +50,7 @@ func NewDestStateEntry(s System, path string) (DestStateEntry, error) {
 	//nolint:exhaustive
 	switch info.Mode() & os.ModeType {
 	case 0:
-		return &DestStateFile{
+		return &ActualStateFile{
 			path: path,
 			perm: info.Mode() & os.ModePerm,
 			lazyContents: &lazyContents{
@@ -60,12 +60,12 @@ func NewDestStateEntry(s System, path string) (DestStateEntry, error) {
 			},
 		}, nil
 	case os.ModeDir:
-		return &DestStateDir{
+		return &ActualStateDir{
 			path: path,
 			perm: info.Mode() & os.ModePerm,
 		}, nil
 	case os.ModeSymlink:
-		return &DestStateSymlink{
+		return &ActualStateSymlink{
 			path: path,
 			lazyLinkname: &lazyLinkname{
 				linknameFunc: func() (string, error) {
@@ -82,41 +82,41 @@ func NewDestStateEntry(s System, path string) (DestStateEntry, error) {
 }
 
 // Path returns d's path.
-func (d *DestStateAbsent) Path() string {
+func (d *ActualStateAbsent) Path() string {
 	return d.path
 }
 
 // Remove removes d.
-func (d *DestStateAbsent) Remove(s System) error {
+func (d *ActualStateAbsent) Remove(s System) error {
 	return nil
 }
 
 // Path returns d's path.
-func (d *DestStateDir) Path() string {
+func (d *ActualStateDir) Path() string {
 	return d.path
 }
 
 // Remove removes d.
-func (d *DestStateDir) Remove(s System) error {
+func (d *ActualStateDir) Remove(s System) error {
 	return s.RemoveAll(d.path)
 }
 
 // Path returns d's path.
-func (d *DestStateFile) Path() string {
+func (d *ActualStateFile) Path() string {
 	return d.path
 }
 
 // Remove removes d.
-func (d *DestStateFile) Remove(s System) error {
+func (d *ActualStateFile) Remove(s System) error {
 	return s.RemoveAll(d.path)
 }
 
 // Path returns d's path.
-func (d *DestStateSymlink) Path() string {
+func (d *ActualStateSymlink) Path() string {
 	return d.path
 }
 
 // Remove removes d.
-func (d *DestStateSymlink) Remove(s System) error {
+func (d *ActualStateSymlink) Remove(s System) error {
 	return s.RemoveAll(d.path)
 }

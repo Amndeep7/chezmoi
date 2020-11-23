@@ -150,12 +150,12 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 					s := newTestRealSystem(fs)
 
 					// Read the initial destination state entry from fs.
-					destStateEntry, err := NewDestStateEntry(s, "/home/user/foo")
+					actualStateEntry, err := NewActualStateEntry(s, "/home/user/foo")
 					require.NoError(t, err)
 
 					// Apply the target state entry.
 					targetSystem := newTestRealSystem(fs)
-					require.NoError(t, tc1.targetStateEntry.Apply(targetSystem, destStateEntry, GetUmask()))
+					require.NoError(t, tc1.targetStateEntry.Apply(targetSystem, actualStateEntry, GetUmask()))
 
 					// Verify that the destination state entry matches the
 					// desired state.
@@ -163,9 +163,9 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 
 					// Read the updated destination state entry from fs and
 					// verify that it is equal to the target state entry.
-					newDestStateEntry, err := NewDestStateEntry(s, "/home/user/foo")
+					newActualStateEntry, err := NewActualStateEntry(s, "/home/user/foo")
 					require.NoError(t, err)
-					equal, err := tc1.targetStateEntry.Equal(newDestStateEntry, GetUmask())
+					equal, err := tc1.targetStateEntry.Equal(newActualStateEntry, GetUmask())
 					require.NoError(t, err)
 					require.True(t, equal)
 				})
