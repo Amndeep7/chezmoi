@@ -20,6 +20,7 @@ func (c *Config) includeTemplateFunc(filename string) string {
 	contents, err := c.fs.ReadFile(path.Join(c.absSourceDir, filename))
 	if err != nil {
 		returnTemplateError(err)
+		return ""
 	}
 	return string(contents)
 }
@@ -37,11 +38,13 @@ func (c *Config) ioregTemplateFunc() map[string]interface{} {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("ioreg: %w", err))
+		return nil
 	}
 
 	var value map[string]interface{}
 	if _, err := plist.Unmarshal(output, &value); err != nil {
 		returnTemplateError(fmt.Errorf("ioreg: %w", err))
+		return nil
 	}
 	c.ioregData.value = value
 	return value

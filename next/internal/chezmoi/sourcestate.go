@@ -724,7 +724,7 @@ func (s *SourceState) executeTemplate(path string) ([]byte, error) {
 	return s.ExecuteTemplateData(path, data)
 }
 
-// newSourceStateDir FIXME
+// newSourceStateDir returns a new SourceStateDir.
 func (s *SourceState) newSourceStateDir(sourcePath string, da DirAttributes) *SourceStateDir {
 	targetStateDir := &TargetStateDir{
 		perm: da.perm(),
@@ -736,7 +736,7 @@ func (s *SourceState) newSourceStateDir(sourcePath string, da DirAttributes) *So
 	}
 }
 
-// newSourceStateFile FIXME
+// newSourceStateFile returns a new SourceStateFile.
 func (s *SourceState) newSourceStateFile(sourcePath string, fa FileAttributes, targetName string) *SourceStateFile {
 	lazyContents := &lazyContents{
 		contentsFunc: func() ([]byte, error) {
@@ -836,7 +836,7 @@ func (s *SourceState) newSourceStateFile(sourcePath string, fa FileAttributes, t
 	}
 }
 
-// sourceStateEntry FIXME
+// sourceStateEntry returns a new SourceStateEntry based on destStateEntry.
 func (s *SourceState) sourceStateEntry(destStateEntry DestStateEntry, destPath string, info os.FileInfo, parentDir string, options *AddOptions) (SourceStateEntry, error) {
 	// FIXME IAMHERE need to generate EntryState and update status if needed
 	switch destStateEntry := destStateEntry.(type) {

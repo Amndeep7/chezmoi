@@ -110,9 +110,12 @@ type Config struct {
 	absSourceDir string
 	absDestDir   string
 
-	stdin  io.Reader
-	stdout io.Writer
-	stderr io.Writer
+	stdin     io.Reader
+	stdout    io.Writer
+	stderr    io.Writer
+	tty       io.ReadWriter
+	ttyReader *bufio.Reader
+	ttyWriter io.Writer
 
 	//nolint:structcheck,unused
 	ioregData ioregData
@@ -672,6 +675,19 @@ func (c *Config) getTargetNames(s *chezmoi.SourceState, args []string, options g
 	return targetNames[:n], nil
 }
 
+func (c *Config) getTTY() (*bufio.Reader, io.Writer, error) {
+	if c.tty == nil {
+		var err error
+		c.tty, err = os.OpenFile("/dev/tty", os.O_RDWR, 0)
+		if err != nil {
+			return nil, nil, err
+		}
+		c.ttyReader = bufio.NewReader(c.tty)
+		c.ttyWriter = c.tty
+	}
+	return c.ttyReader, c.ttyWriter, nil
+}
+
 func (c *Config) gitAutoAdd() (*git.Status, error) {
 	if err := c.run(c.absSourceDir, c.Git.Command, []string{"add", "."}); err != nil {
 		return nil, err
@@ -958,13 +974,16 @@ func (c *Config) persistentPostRunRootE(cmd *cobra.Command, args []string) error
 }
 
 func (c *Config) prompt(s, choices string) (byte, error) {
-	r := bufio.NewReader(c.stdin)
+	ttyReader, ttyWriter, err := c.getTTY()
+	if err != nil {
+		return 0, err
+	}
 	for {
-		_, err := fmt.Printf("%s [%s]? ", s, strings.Join(strings.Split(choices, ""), ","))
+		_, err := fmt.Fprintf(ttyWriter, "%s [%s]? ", s, strings.Join(strings.Split(choices, ""), ","))
 		if err != nil {
 			return 0, err
 		}
-		line, err := r.ReadString('\n')
+		line, err := ttyReader.ReadString('\n')
 		if err != nil {
 			return 0, err
 		}

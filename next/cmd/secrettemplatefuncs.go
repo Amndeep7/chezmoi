@@ -28,6 +28,7 @@ func (c *Config) secretTemplateFunc(args ...string) string {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return ""
 	}
 	value := string(bytes.TrimSpace(output))
 	if c.Secret.cache == nil {
@@ -49,10 +50,12 @@ func (c *Config) secretJSONTemplateFunc(args ...string) interface{} {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return nil
 	}
 	var value interface{}
 	if err := json.Unmarshal(output, &value); err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return nil
 	}
 	if c.Secret.jsonCache == nil {
 		c.Secret.jsonCache = make(map[string]interface{})

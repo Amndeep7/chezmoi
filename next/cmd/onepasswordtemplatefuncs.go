@@ -27,6 +27,7 @@ func (c *Config) onepasswordOutput(args []string) []byte {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return nil
 	}
 
 	if c.Onepassword.outputCache == nil {
@@ -46,6 +47,7 @@ func (c *Config) onepasswordTemplateFunc(args ...string) map[string]interface{} 
 	var data map[string]interface{}
 	if err := json.Unmarshal(output, &data); err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", c.Onepassword.Command, chezmoi.ShellQuoteArgs(onepasswordArgs), err, output))
+		return nil
 	}
 	return data
 }
@@ -74,6 +76,7 @@ func (c *Config) onepasswordDetailsFieldsTemplateFunc(args ...string) map[string
 	}
 	if err := json.Unmarshal(output, &data); err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", c.Onepassword.Command, chezmoi.ShellQuoteArgs(onepasswordArgs), err, output))
+		return nil
 	}
 	result := make(map[string]interface{})
 	for _, field := range data.Details.Fields {

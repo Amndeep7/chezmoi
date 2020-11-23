@@ -5,7 +5,6 @@ package cmd
 // FIXME should ninja be an undocumented command?
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"os"
@@ -262,7 +261,8 @@ func (c *Config) findConfigTemplate() (string, string, []byte, error) {
 func (c *Config) promptBool(field string) bool {
 	value, err := parseBool(c.promptString(field))
 	if err != nil {
-		panic(err)
+		returnTemplateError(err)
+		return false
 	}
 	return value
 }
@@ -270,16 +270,23 @@ func (c *Config) promptBool(field string) bool {
 func (c *Config) promptInt(field string) int64 {
 	value, err := strconv.ParseInt(c.promptString(field), 10, 64)
 	if err != nil {
-		panic(err)
+		returnTemplateError(err)
+		return 0
 	}
 	return value
 }
 
 func (c *Config) promptString(field string) string {
-	fmt.Fprintf(c.stdout, "%s? ", field)
-	value, err := bufio.NewReader(c.stdin).ReadString('\n')
+	ttyReader, ttyWriter, err := c.getTTY()
 	if err != nil {
-		panic(err)
+		returnTemplateError(err)
+		return ""
+	}
+	fmt.Fprintf(ttyWriter, "%s? ", field)
+	value, err := ttyReader.ReadString('\n')
+	if err != nil {
+		returnTemplateError(err)
+		return ""
 	}
 	return strings.TrimSpace(value)
 }

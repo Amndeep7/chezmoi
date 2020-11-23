@@ -25,6 +25,7 @@ func (c *Config) passTemplateFunc(id string) string {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w", name, chezmoi.ShellQuoteArgs(args), err))
+		return ""
 	}
 	var password string
 	if index := bytes.IndexByte(output, '\n'); index != -1 {

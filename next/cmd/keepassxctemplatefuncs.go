@@ -47,10 +47,12 @@ func (c *Config) getKeepassxcVersion() *semver.Version {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w", name, chezmoi.ShellQuoteArgs(args), err))
+		return nil
 	}
 	c.Keepassxc.version, err = semver.NewVersion(string(bytes.TrimSpace(output)))
 	if err != nil {
 		returnTemplateError(fmt.Errorf("cannot parse version %q: %w", output, err))
+		return nil
 	}
 	return c.Keepassxc.version
 }
@@ -61,6 +63,7 @@ func (c *Config) keepassxcTemplateFunc(entry string) map[string]string {
 	}
 	if c.Keepassxc.Database == "" {
 		returnTemplateError(errors.New("keepassxc.database not set"))
+		return nil
 	}
 	name := c.Keepassxc.Command
 	args := []string{"show"}
@@ -72,10 +75,12 @@ func (c *Config) keepassxcTemplateFunc(entry string) map[string]string {
 	output, err := c.runKeepassxcCLICommand(name, args)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w", name, chezmoi.ShellQuoteArgs(args), err))
+		return nil
 	}
 	data, err := parseKeyPassXCOutput(output)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w", name, chezmoi.ShellQuoteArgs(args), err))
+		return nil
 	}
 	if c.Keepassxc.cache == nil {
 		c.Keepassxc.cache = make(map[string]map[string]string)
@@ -94,6 +99,7 @@ func (c *Config) keepassxcAttributeTemplateFunc(entry, attribute string) string 
 	}
 	if c.Keepassxc.Database == "" {
 		returnTemplateError(errors.New("keepassxc.database not set"))
+		return ""
 	}
 	name := c.Keepassxc.Command
 	args := []string{"show", "--attributes", attribute, "--quiet"}
@@ -105,6 +111,7 @@ func (c *Config) keepassxcAttributeTemplateFunc(entry, attribute string) string 
 	output, err := c.runKeepassxcCLICommand(name, args)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w", name, chezmoi.ShellQuoteArgs(args), err))
+		return ""
 	}
 	outputStr := strings.TrimSpace(string(output))
 	if c.Keepassxc.attributeCache == nil {

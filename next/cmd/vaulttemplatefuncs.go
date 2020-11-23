@@ -25,10 +25,12 @@ func (c *Config) vaultTemplateFunc(key string) interface{} {
 	output, err := c.baseSystem.IdempotentCmdOutput(cmd)
 	if err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return nil
 	}
 	var data interface{}
 	if err := json.Unmarshal(output, &data); err != nil {
 		returnTemplateError(fmt.Errorf("%s %s: %w\n%s", name, chezmoi.ShellQuoteArgs(args), err, output))
+		return nil
 	}
 	if c.Vault.cache == nil {
 		c.Vault.cache = make(map[string]interface{})

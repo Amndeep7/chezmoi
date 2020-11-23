@@ -24,7 +24,7 @@ type debugPersistentState struct {
 // records that they occurred.
 //
 // FIXME mock writes (e.g. writes should not affect the underlying
-// PersistentState but subsequent reads should return as if the write occurred)
+// PersistentState but subsequent reads should return as if the write occurred).
 type dryRunPersistentState struct {
 	s        PersistentState
 	modified bool
