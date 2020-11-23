@@ -326,7 +326,7 @@ func (t *TargetStateScript) EntryState() (*EntryState, error) {
 
 // Equal returns true if actualStateEntry matches t.
 func (t *TargetStateScript) Equal(actualStateEntry ActualStateEntry, umask os.FileMode) (bool, error) {
-	// Scripts are independent of the destination state.
+	// Scripts are independent of the actual state.
 	// FIXME maybe the destination state should store the sha256 sums of executed scripts
 	return true, nil
 }

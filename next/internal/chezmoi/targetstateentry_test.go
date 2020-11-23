@@ -157,8 +157,8 @@ func TestTargetStateEntryApplyAndEqual(t *testing.T) {
 					targetSystem := newTestRealSystem(fs)
 					require.NoError(t, tc1.targetStateEntry.Apply(targetSystem, actualStateEntry, GetUmask()))
 
-					// Verify that the destination state entry matches the
-					// desired state.
+					// Verify that the actual state entry matches the desired
+					// state.
 					vfst.RunTests(t, fs, "", vfst.TestPath("/home/user/foo", targetStateTest(t, tc1.targetStateEntry)...))
 
 					// Read the updated destination state entry from fs and
